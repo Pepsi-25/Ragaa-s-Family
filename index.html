@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>لعبة توصيل الكلمات العربية بالصور</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            margin: 0;
+            padding: 20px;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            color: white;
+        }
+        
+        .container {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 30px;
+            max-width: 900px;
+            width: 100%;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+        
+        h1 {
+            text-align: center;
+            font-size: 2.5em;
+            margin-bottom: 30px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+        }
+        
+        .game-board {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+        
+        .words-column, .images-column {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        
+        .column-title {
+            text-align: center;
+            font-size: 1.5em;
+            font-weight: bold;
+            margin-bottom: 15px;
+            color: #ffeb3b;
+        }
+        
+        .word-item, .image-item {
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 15px;
+            padding: 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 3px solid transparent;
+            user-select: none;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .word-item {
+            font-size: 1.8em;
+            font-weight: bold;
+            min-height: 80px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .image-item {
+            font-size: 4em;
+            height: 120px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .image-item img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+            border-radius: 10px;
+        }
+        
+        .word-item:hover, .image-item:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateY(-5px);
+            box-shadow: 0 5px 20px rgba(0,0,0,0.3);
+        }
+        
+        .selected {
+            border-color: #ffeb3b !important;
+            background: rgba(255, 235, 59, 0.4) !important;
+            transform: scale(1.05);
+            box-shadow: 0 0 20px rgba(255, 235, 59, 0.5);
+        }
+        
+        .matched {
+            border-color: #4caf50 !important;
+            background: rgba(76, 175, 80, 0.4) !important;
+            pointer-events: none;
+            opacity: 0.8;
+            animation: matchSuccess 0.6s ease-in-out;
+        }
+        
+        .wrong {
+            border-color: #f44336 !important;
+            background: rgba(244, 67, 54, 0.4) !important;
+            animation: wrongShake 0.6s ease-in-out;
+        }
+        
+        @keyframes matchSuccess {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1.05); }
+        }
+        
+        @keyframes wrongShake {
+            0%, 100% { transform: translateX(0); }
+            20% { transform: translateX(-15px); }
+            40% { transform: translateX(15px); }
+            60% { transform: translateX(-10px); }
+            80% { transform: translateX(10px); }
+        }
+        
+        .score-board {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 20px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .score-item {
+            text-align: center;
+            font-size: 1.1em;
+        }
+        
+        .score-number {
+            font-size: 2em;
+            font-weight: bold;
+            color: #ffeb3b;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+        }
+        
+        .controls {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+        
+        .btn {
+            background: linear-gradient(45deg, #ff6b6b, #ee5a24);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            font-size: 1.1em;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: bold;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        }
+        
+        .btn.sound-btn {
+            background: linear-gradient(45deg, #4caf50, #2e7d32);
+        }
+        
+        .btn.sound-btn.muted {
+            background: linear-gradient(45deg, #f44336, #d32f2f);
+        }
+        
+        .success-message {
+            text-align: center;
+            font-size: 1.8em;
+            color: #4caf50;
+            margin-top: 20px;
+            opacity: 0;
+            transition: opacity 0.5s ease;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+        }
+        
+        .success-message.show {
+            opacity: 1;
+            animation: celebration 1s ease-in-out;
+        }
+        
+        @keyframes celebration {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+        
+        .sound-indicator {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            font-size: 1.5em;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        
+        .sound-indicator.show {
+            opacity: 1;
+        }
+        
+        @media (max-width: 768px) {
+            .game-board {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+            
+            .score-board {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .controls {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            h1 {
+                font-size: 2em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="sound-indicator" id="soundIndicator">🔊</div>
+    
+    <div class="container">
+        <h1> لعبة توصيل الكلمات بالصور لاسره الرجاء</h1>
+        
+        <div class="score-board">
+            <div class="score-item">
+                <div>النتيجة</div>
+                <div class="score-number" id="score">0</div>
+            </div>
+            <div class="score-item">
+                <div>المحاولات</div>
+                <div class="score-number" id="attempts">0</div>
+            </div>
+            <div class="score-item">
+                <div>الصحيح</div>
+                <div class="score-number" id="correct">0</div>
+            </div>
+            <div class="score-item">
+                <div>المتبقي</div>
+                <div class="score-number" id="remaining">8</div>
+            </div>
+        </div>
+        
+        <div class="game-board">
+            <div class="words-column">
+                <div class="column-title">الكلمات</div>
+                <div class="word-item" data-word="دير">دير</div>
+                <div class="word-item" data-word="صلاه">صلاه</div>
+                <div class="word-item" data-word="راهب">راهب</div>
+                <div class="word-item" data-word="حب">حب</div>
+            </div>
+            
+            <div class="images-column">
+                <div class="column-title">الصور</div>
+                <div class="image-item" data-word="دير">
+                    <img src="images/cat.jpg" alt="دير" onerror="this.style.display='none'; this.parentElement.innerHTML='🐱'">
+                </div>
+                <div class="image-item" data-word="صلاه">
+                    <img src="images/book.jpg" alt="صلاه" onerror="this.style.display='none'; this.parentElement.innerHTML='📚'">
+                </div>
+                <div class="image-item" data-word="راهب">
+                    <img src="images/car.jpg" alt="راهب" onerror="this.style.display='none'; this.parentElement.innerHTML='🚗'">
+                </div>
+                <div class="image-item" data-word="حب">
+                    <img src="images/heart.jpg" alt="حب" onerror="this.style.display='none'; this.parentElement.innerHTML='❤️'">
+                </div>
+            </div>
+        
+        <div class="success-message" id="successMessage">
+            🎉 مبروك! لقد أكملت اللعبة بنجاح! 🎉
+        </div>
+        
+        <div class="controls">
+            <button class="btn sound-btn" id="soundBtn" onclick="toggleSound()">🔊 الصوت مفعل</button>
+            <button class="btn" onclick="resetGame()">🔄 لعبة جديدة</button>
+            <button class="btn" onclick="shuffleAll()">🔀 خلط الكل</button>
+        </div>
+    </div>
+
+    <script>
+        let selectedWord = null;
+        let selectedImage = null;
+        let score = 0;
+        let attempts = 0;
+        let correctMatches = 0;
+        let matchedPairs = 0;
+        let totalPairs = 8;
+        let soundEnabled = true;
+        
+        // إنشاء الأصوات باستخدام Web Audio API
+        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        
+        function createBeep(frequency, duration, type = 'sine') {
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            oscillator.frequency.value = frequency;
+            oscillator.type = type;
+            
+            gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + duration);
+            
+            oscillator.start(audioContext.currentTime);
+            oscillator.stop(audioContext.currentTime + duration);
+        }
+        
+        function playSuccessSound() {
+            if (!soundEnabled) return;
+            // نغمة نجاح جميلة
+            createBeep(523.25, 0.2); // C5
+            setTimeout(() => createBeep(659.25, 0.2), 100); // E5
+            setTimeout(() => createBeep(783.99, 0.3), 200); // G5
+            showSoundIndicator('✅');
+        }
+        
+        function playErrorSound() {
+            if (!soundEnabled) return;
+            // نغمة خطأ
+            createBeep(200, 0.15, 'square');
+            setTimeout(() => createBeep(150, 0.15, 'square'), 100);
+            setTimeout(() => createBeep(100, 0.2, 'square'), 200);
+            showSoundIndicator('❌');
+        }
+        
+        function playCompletionSound() {
+            if (!soundEnabled) return;
+            // نغمة إكمال اللعبة
+            const notes = [523.25, 659.25, 783.99, 1046.50]; // C5, E5, G5, C6
+            notes.forEach((freq, index) => {
+                setTimeout(() => createBeep(freq, 0.4), index * 150);
+            });
+            showSoundIndicator('🎉');
+        }
+        
+        function showSoundIndicator(icon) {
+            const indicator = document.getElementById('soundIndicator');
+            indicator.textContent = icon;
+            indicator.classList.add('show');
+            setTimeout(() => indicator.classList.remove('show'), 1000);
+        }
+        
+        function toggleSound() {
+            soundEnabled = !soundEnabled;
+            const btn = document.getElementById('soundBtn');
+            if (soundEnabled) {
+                btn.textContent = '🔊 الصوت مفعل';
+                btn.classList.remove('muted');
+            } else {
+                btn.textContent = '🔇 الصوت مغلق';
+                btn.classList.add('muted');
+            }
+        }
+        
+        // خلط العناصر عشوائياً
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+        }
+        
+        function shuffleImages() {
+            const imagesColumn = document.querySelector('.images-column');
+            const images = Array.from(imagesColumn.querySelectorAll('.image-item'));
+            
+            shuffleArray(images);
+            images.forEach(image => imagesColumn.appendChild(image));
+        }
+        
+        function shuffleWords() {
+            const wordsColumn = document.querySelector('.words-column');
+            const words = Array.from(wordsColumn.querySelectorAll('.word-item'));
+            
+            shuffleArray(words);
+            words.forEach(word => wordsColumn.appendChild(word));
+        }
+        
+        function shuffleAll() {
+            shuffleWords();
+            shuffleImages();
+        }
+        
+        // إضافة مستمع الأحداث للكلمات
+        document.querySelectorAll('.word-item').forEach(item => {
+            item.addEventListener('click', function() {
+                if (this.classList.contains('matched')) return;
+                
+                // تشغيل الصوت عند النقر
+                audioContext.resume();
+                
+                // إزالة التحديد السابق
+                document.querySelectorAll('.word-item').forEach(w => w.classList.remove('selected'));
+                
+                // تحديد الكلمة الحالية
+                this.classList.add('selected');
+                selectedWord = this.dataset.word;
+                
+                clearFeedback();
+                checkMatch();
+            });
+        });
+        
+        // إضافة مستمع الأحداث للصور
+        document.querySelectorAll('.image-item').forEach(item => {
+            item.addEventListener('click', function() {
+                if (this.classList.contains('matched')) return;
+                
+                // تشغيل الصوت عند النقر
+                audioContext.resume();
+                
+                // إزالة التحديد السابق
+                document.querySelectorAll('.image-item').forEach(i => i.classList.remove('selected'));
+                
+                // تحديد الصورة الحالية
+                this.classList.add('selected');
+                selectedImage = this.dataset.word;
+                
+                clearFeedback();
+                checkMatch();
+            });
+        });
+        
+        function checkMatch() {
+            if (selectedWord && selectedImage) {
+                attempts++;
+                document.getElementById('attempts').textContent = attempts;
+                
+                if (selectedWord === selectedImage) {
+                    // توصيل صحيح
+                    const wordElement = document.querySelector(`[data-word="${selectedWord}"].word-item`);
+                    const imageElement = document.querySelector(`[data-word="${selectedImage}"].image-item`);
+                    
+                    wordElement.classList.add('matched');
+                    imageElement.classList.add('matched');
+                    
+                    score += 10;
+                    correctMatches++;
+                    matchedPairs++;
+                    
+                    document.getElementById('score').textContent = score;
+                    document.getElementById('correct').textContent = correctMatches;
+                    document.getElementById('remaining').textContent = totalPairs - matchedPairs;
+                    
+                    // تشغيل صوت النجاح
+                    playSuccessSound();
+                    
+                    // تحقق من انتهاء اللعبة
+                    if (matchedPairs === totalPairs) {
+                        setTimeout(() => {
+                            document.getElementById('successMessage').classList.add('show');
+                            playCompletionSound();
+                        }, 500);
+                    }
+                } else {
+                    // توصيل خاطئ
+                    const wordElement = document.querySelector(`[data-word="${selectedWord}"].word-item`);
+                    const imageElement = document.querySelector(`[data-word="${selectedImage}"].image-item`);
+                    
+                    wordElement.classList.add('wrong');
+                    imageElement.classList.add('wrong');
+                    
+                    // تشغيل صوت الخطأ
+                    playErrorSound();
+                    
+                    setTimeout(() => {
+                        wordElement.classList.remove('wrong');
+                        imageElement.classList.remove('wrong');
+                    }, 600);
+                }
+                
+                // إعادة تعيين التحديد
+                setTimeout(() => {
+                    document.querySelectorAll('.selected').forEach(item => {
+                        if (!item.classList.contains('matched')) {
+                            item.classList.remove('selected');
+                        }
+                    });
+                    selectedWord = null;
+                    selectedImage = null;
+                }, 600);
+            }
+        }
+        
+        function clearFeedback() {
+            document.querySelectorAll('.wrong').forEach(item => {
+                item.classList.remove('wrong');
+            });
+        }
+        
+        function resetGame() {
+            // إعادة تعيين المتغيرات
+            selectedWord = null;
+            selectedImage = null;
+            score = 0;
+            attempts = 0;
+            correctMatches = 0;
+            matchedPairs = 0;
+            
+            // تحديث العرض
+            document.getElementById('score').textContent = score;
+            document.getElementById('attempts').textContent = attempts;
+            document.getElementById('correct').textContent = correctMatches;
+            document.getElementById('remaining').textContent = totalPairs;
+            
+            // إزالة جميع الحالات
+            document.querySelectorAll('.word-item, .image-item').forEach(item => {
+                item.classList.remove('selected', 'matched', 'wrong');
+            });
+            
+            // إخفاء رسالة النجاح
+            document.getElementById('successMessage').classList.remove('show');
+            
+            // خلط العناصر
+            shuffleAll();
+        }
+        
+        // تشغيل اللعبة عند تحميل الصفحة
+        window.addEventListener('load', function() {
+            shuffleAll();
+        });
+        
+        // السماح بتشغيل الصوت عند أول تفاعل
+        document.addEventListener('click', function() {
+            audioContext.resume();
+        }, { once: true });
+    </script>
+</body>
+</html>
